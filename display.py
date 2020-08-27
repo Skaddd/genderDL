@@ -105,3 +105,8 @@ def fin(path_img):
 if __name__ =="__main__":
     fin('c.png')
     
+
+
+
+
+
