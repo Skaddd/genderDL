@@ -24,6 +24,19 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 
 
+
+def gpu_dynamic_mem_growth():
+    # Check for GPUs and set them to dynamically grow memory as needed
+    # Avoids OOM from tensorflow greedily allocating GPU memory
+    try:
+        gpu_devices = tf.config.list_physical_devices('GPU')
+        if len(gpu_devices) > 0:
+            for gpu in gpu_devices:
+                tf.config.experimental.set_memory_growth(gpu, True)
+    except AttributeError:
+        print('Upgrade your tensorflow to 2.x to have the gpu_dynamic_mem_growth feature.')
+
+
 print("Num GPUs Available: ", len(tf.config.experimental.list_physical_devices('GPU')))
 
 #PARSING DATA
@@ -39,140 +52,141 @@ COUNT = 1
 EPOCHS = 5
 BATCH_SIZE = 16
 
+with tf.device('/CPU:0'):
+    
 
-
-all_data =[]
-for txt in files_list:
-    with open(os.path.join(base_dir,txt),'r') as file:
-        lines=file.readlines()[1:]
-        for line in lines:
-            data=line.strip().split('\t')
-            all_data.append([data[0],data[2]+'.'+data[1],data[3],data[4]])
-#print(all_data[0])
-
-
-
-
-
-age_class = {'(0, 2)': 0,
-                '(4, 6)': 1,
-                '(8, 12)': 2,
-                '(15, 20)': 3,
-                '(25, 32)': 4,
-                '(38, 43)': 5,
-                '(48, 53)': 6,
-                '(60, 100)': 7}
-gender_class = {'m': 0.0, 'f': 1.0}
+    all_data =[]
+    for txt in files_list:
+        with open(os.path.join(base_dir,txt),'r') as file:
+            lines=file.readlines()[1:]
+            for line in lines:
+                data=line.strip().split('\t')
+                all_data.append([data[0],data[2]+'.'+data[1],data[3],data[4]])
+    #print(all_data[0])
 
 
 
 
-age_data = []
-gender_data = []
-age_gender_data = []
-i=0
-prefix = ''
-for data in all_data:
-    try:
-        if data[2] == '(38, 42)' or data[2] == '(38, 48)':
-            data[2] = '(38, 43)'
 
-        if data[2] == '(27, 32)':
-            data[2] = '(25, 32)'
+    age_class = {'(0, 2)': 0,
+                    '(4, 6)': 1,
+                    '(8, 12)': 2,
+                    '(15, 20)': 3,
+                    '(25, 32)': 4,
+                    '(38, 43)': 5,
+                    '(48, 53)': 6,
+                    '(60, 100)': 7}
+    gender_class = {'m': 0.0, 'f': 1.0}
 
-        if data[2] not in age_class and data[2]is not None:
-            age = int(data[2])
-            if 0 <= age <= 3:
-                data[2] = '(0, 2)'
-            elif 4 <= age <= 7:
-                data[2] = '(4, 6)'
-            elif 8 <= age <= 14:
-                data[2] = '(8, 12)'
-            elif 15 <= age <= 24:
-                data[2] = '(15, 20)'
-            elif 25 <= age <= 37:
+
+
+
+    age_data = []
+    gender_data = []
+    age_gender_data = []
+    i=0
+    prefix = ''
+    for data in all_data:
+        try:
+            if data[2] == '(38, 42)' or data[2] == '(38, 48)':
+                data[2] = '(38, 43)'
+
+            if data[2] == '(27, 32)':
                 data[2] = '(25, 32)'
-            elif 38 <= age <= 47:
-                data[2] =  '(38, 43)'
-            elif 48 <= age <= 59:
-                data[2] = '(48, 53)'
-            elif 60 <= age <= 100:
-                data[2] = '(60, 100)'
-        if data[2] is not None and data[3]!='u':
-            age_gender_data.append((os.path.join(base_dir, 'aligned/' + data[0] + '/landmark_aligned_face.' + data[1]),age_class[data[2]], gender_class[data[3]]))
-            age_data.append((os.path.join(base_dir, 'aligned/' + data[0] + '/landmark_aligned_face.' + data[1]),age_class[data[2]]))
-            gender_data.append((os.path.join(base_dir, 'aligned/' + data[0] + '/landmark_aligned_face.' + data[1]),gender_class[data[3]]))
 
-    except:
-        pass
+            if data[2] not in age_class and data[2]is not None:
+                age = int(data[2])
+                if 0 <= age <= 3:
+                    data[2] = '(0, 2)'
+                elif 4 <= age <= 7:
+                    data[2] = '(4, 6)'
+                elif 8 <= age <= 14:
+                    data[2] = '(8, 12)'
+                elif 15 <= age <= 24:
+                    data[2] = '(15, 20)'
+                elif 25 <= age <= 37:
+                    data[2] = '(25, 32)'
+                elif 38 <= age <= 47:
+                    data[2] =  '(38, 43)'
+                elif 48 <= age <= 59:
+                    data[2] = '(48, 53)'
+                elif 60 <= age <= 100:
+                    data[2] = '(60, 100)'
+            if data[2] is not None and data[3]!='u':
+                age_gender_data.append((os.path.join(base_dir, 'aligned/' + data[0] + '/landmark_aligned_face.' + data[1]),age_class[data[2]], gender_class[data[3]]))
+                age_data.append((os.path.join(base_dir, 'aligned/' + data[0] + '/landmark_aligned_face.' + data[1]),age_class[data[2]]))
+                gender_data.append((os.path.join(base_dir, 'aligned/' + data[0] + '/landmark_aligned_face.' + data[1]),gender_class[data[3]]))
 
-
-
-
-#Splitting the data into  train validation and test sets
-train_df,temp = train_test_split(gender_data,test_size=0.75)
-
-temp_=None
-
-train_labels_gen =[]
-train_labels_age=[]
-
-
-#DATA PROCESSING
-
-def one_hot_code(list1):
-    n = len(list1)
-    out = np.zeros((n,8))
-    print(max(list1))
-    for k in range (n):
-        out[k][int(list1[k])] =1.0
-    return out
-
-def unzipdata(train_df):
-    if COUNT ==0:
-        print("You picked age only")
-        train_df,train_labels_age =map( list,zip(*train_df))
-
-        labels = one_hot_code(train_labels_age)
-       
-    else:
-        print("You picked gender only")
-        train_df,train_labels_gen =map( list,zip(*train_df))
-        labels=np.resize(np.array(train_labels_gen),(len(train_labels_gen),1))
-
-    return train_df,labels,
-
-def preproc( path_img):
-    im =cv2.imread(path_img)
-    im =cv2.resize(im,(227,227))
-    return im
+        except:
+            pass
 
 
 
-train_df,labels=unzipdata(train_df)
 
-print("Precrossing the data")
+    #Splitting the data into  train validation and test sets
+    train_df,temp = train_test_split(gender_data,test_size=0.5)
 
-for _ in range (len(train_df)):
-    train_df[_]= preproc(train_df[_])
+    temp_=None
 
-
-  
-
-images = np.array(train_df)
+    train_labels_gen =[]
+    train_labels_age=[]
 
 
-print(images.shape)
-print(labels.shape)
+    #DATA PROCESSING
+
+    def one_hot_code(list1):
+        n = len(list1)
+        out = np.zeros((n,8))
+        print(max(list1))
+        for k in range (n):
+            out[k][int(list1[k])] =1.0
+        return out
+
+    def unzipdata(train_df):
+        if COUNT ==0:
+            print("You picked age only")
+            train_df,train_labels_age =map( list,zip(*train_df))
+
+            labels = one_hot_code(train_labels_age)
+        
+        else:
+            print("You picked gender only")
+            train_df,train_labels_gen =map( list,zip(*train_df))
+            labels=np.resize(np.array(train_labels_gen),(len(train_labels_gen),1))
+
+        return train_df,labels,
+
+    def preproc( path_img):
+        im =cv2.imread(path_img)
+        im =cv2.resize(im,(227,227))
+        return im
 
 
 
-images = images.astype(np.float32)/255.0
-train_images,test_images,train_labels,test_labels = train_test_split(images,labels,test_size=0.1)
+    train_df,labels=unzipdata(train_df)
+
+    print("Precrossing the data")
+
+    for _ in range (len(train_df)):
+        train_df[_]= preproc(train_df[_])
+
+
+    
+
+    images = np.array(train_df)
+
+
+    print(images.shape)
+    print(labels.shape)
 
 
 
-train_images,val_images,train_labels,val_labels = train_test_split(train_images,train_labels,test_size = 0.2)
+    images = images.astype(np.float32)/255.0
+    train_images,test_images,train_labels,test_labels = train_test_split(images,labels,test_size=0.1)
+
+
+
+    train_images,val_images,train_labels,val_labels = train_test_split(train_images,train_labels,test_size = 0.2)
 
 
 
@@ -213,8 +227,6 @@ initial_lr=0.001
 lr_schedule = keras.optimizers.schedules.ExponentialDecay(initial_lr,decay_steps=100000,decay_rate=0.96,staircase=True)
 
 
-
-
 def main():
 
     with tf.device('/GPU:0'):
@@ -227,12 +239,11 @@ def main():
                     train_labels,batch_size=BATCH_SIZE),
                     steps_per_epoch=int(len(train_labels)/BATCH_SIZE),
                     epochs=EPOCHS,
-                    batch_size =BATCH_SIZE,
                     callbacks=[cp_callback1],
                     validation_data =(val_images,val_labels),
                     validation_steps=int(len(val_labels)/BATCH_SIZE))
         #tf.saved_model.save(mymodel,"tmp/model/1/")
-        mymodel.save('models/age_train_2.h5')
+        mymodel.save('models/age_gender_3.h5')
         results = mymodel.evaluate(test_images,test_labels)
         print("test loss, test acc:", results)
         acc = history.history['accuracy']
