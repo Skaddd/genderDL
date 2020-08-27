@@ -40,4 +40,9 @@ Launch the training
 python train.py
 ```
 
+## Results of the AgeGenderDL
 
+
+We created two separate model:
+the gender model reached 96% of accuracy on validation set
+the age model was close de 58% of accuracy on validation set
