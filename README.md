@@ -10,7 +10,7 @@ Note that this project was created on Windows 10, you should probably check path
 ## The GUI
 
 This application requires a webcam
-The app has two main functionality, applying gender and age prediction combined with face recognition on a image taken from the webcam. The result is displayed
+The app has two main functionality, applying gender and age prediction combined with face recognition on a image taken from the webcam. Then the automatically result is displayed.
 The second functionality is about fast style transfer. You will be able to apply style transfer to your image, given different style.
 
 To launch the application you just need to run the first Window
@@ -21,7 +21,7 @@ It's important to not that my pre-trained model are not in this repo
 
 ## Training
 
-you can train your own models, however you need to download the adience database and create a repo named `data/` then directly put the folds inside. FInally you add the 
+you can train your own models, however you need to download the adience database and create a repo named `data/` then directly put the folds inside. Finally you add the 
 `aligned/` folder to it
 
 Now you can try your model
