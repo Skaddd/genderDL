@@ -1,36 +1,30 @@
 import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' 
-import tensorflow
-import cv2
+
 import numpy as np
+import imageio
+import glob
 
 
-import math as m
 import matplotlib.pyplot as plt
 
 import tensorflow as tf
+#print("Eager mode enabled: ", tf.executing_eagerly())
 from tensorflow import keras
 from tensorflow.keras.models import Model
 from tensorflow.keras.preprocessing.image import load_img
 from tensorflow.keras.preprocessing.image import img_to_array
 
 
-img = load_img('test_im/e.jpg',target_size=(227,227))
-img=img_to_array(img)
-
-img = np.expand_dims(img,axis=0)
-img=img/255.
-#print(img.shape)
-
-loaded=tf.keras.models.load_model('models/gender_train.h5')
 
 
-layer_outputs=[ layer.output for layer in loaded.layers[0].layers]
-res = loaded.layers[0]
+def preproces_img(path):
+    img = load_img(path,target_size=(227,227))
+    img=img_to_array(img)
 
-activation_model = Model(inputs=res.input, outputs=layer_outputs)
-activations=activation_model.predict(img)
-img = np.squeeze(img,axis=0)
+    img = np.expand_dims(img,axis=0)
+    img=img/255.
+    return img
 
 
 def display_activation(activations,index_layer):
@@ -49,45 +43,65 @@ def display_activation(activations,index_layer):
     plt.show()
 
 
-display_activation(activations,5)
 
 
 
 
+def display_act_all(activations):
+    print(len(activations))
+    rows = int(np.sqrt(len(activations)))
+    col = rows
+    print(col*rows)
+    fig=plt.figure(figsize=(rows,col))
+    for i in  range (0,col*rows):
+        fig.add_subplot(rows,col,i+1)
+        plt.axis('off')
+        plt.imshow(activations[i][0,:,:,2],cmap='gray')
+
+    plt.show()
 
 
 
 
+def display_save_act_all(activations):
+    rows = 5
+    col = rows
+    print(col*rows)
+    for i in  range (0,col*rows):
+        fig =plt.figure(1)
+        plt.axis('off')
+        plt.imshow(activations[i][0,:,:,2],cmap='gray')
+        fig.savefig('tmp/im{}.png'.format(i))
+        plt.close(fig)
+
+    plt.show()
 
 
+def fin(path_img):
+    with tf.device('/CPU:0'):
+
+        img =preproces_img(path_img)
+        loaded=tf.keras.models.load_model('models/gender_train_2.h5')
+        layer_outputs=[ layer.output for layer in loaded.layers[0].layers]
+        res = loaded.layers[0]
+
+        activation_model = Model(inputs=res.input, outputs=layer_outputs)
+        activations=activation_model.predict(img)
+        img = np.squeeze(img,axis=0)
 
 
+        display_save_act_all(activations)
+
+        images = []
+        size=(64,64)
+        for file in glob.glob("./tmp/*.png"):
+            #print(file)
+            images.append(imageio.imread(file))
+        imageio.mimsave('movie.gif', images,duration=0.5)
+
+   
 
 
-
-
-
-
-"""
-
-layer_outputs=[]
-for l in loaded.layers:
-   # if l.name == 'resnet50':
-    #    continue
-    #else :
-        #layer_outputs.append(l.output)
-    layer_outputs.append(l.output)
-
-print(layer_outputs[0])
-print(loaded.input)
-
-activation_model = Model(inputs=loaded.input, outputs=layer_outputs)
-activations=activation_model.predict(img)
-
-"""
-
-
-#activation_model=Model(inputs=loaded.inputs,outputs=layer_outputs)
-
-
-
+if __name__ =="__main__":
+    fin('c.png')
+    
