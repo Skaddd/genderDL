@@ -15,7 +15,7 @@ from PyQt5.QtWidgets import QMainWindow
 from PyQt5.QtGui import QMovie,QPixmap
 from PyQt5.QtCore import QSize
 
-
+import cv2
 import os
 import glob
 import source
@@ -49,10 +49,10 @@ class Ui_Window3(QMainWindow):
     def setupUi(self,lang):
         self.lang = lang
         self.setObjectName("Window3")
-        self.resize(1920, 1080)
+        #self.resize(1920, 1080)
         self.centralwidget = QtWidgets.QWidget(self)
         
-        self.timer = 300000
+        self.timer = 300000 # in milliseconds
         self.centralwidget.setObjectName("centralwidget")
         self.centralwidget.setStyleSheet(
             "QPushButton{\n"
@@ -64,7 +64,7 @@ class Ui_Window3(QMainWindow):
                         "font: 14pt \"Adobe Pi Std\";\n"
                         "color: rgb(255, 255, 255);}\n"
                         "QPushButton:pressed { border-style : inset; border-color:black}"
-            "#centralwidget {background-image: url(:/images/assets/back1.jpg);}")
+            "#centralwidget{background-image: url(:/images/assets/back1.jpg); background-repeat = no-repeat; background-position = center};")
         self.titlelabel = QtWidgets.QLabel(self.centralwidget)
         self.titlelabel.setGeometry(QtCore.QRect(30, 30, 1800, 71))
         self.titlelabel.setObjectName("titlelabel")
@@ -88,7 +88,7 @@ class Ui_Window3(QMainWindow):
 
 
         self.frameExplain = QtWidgets.QFrame(self.centralwidget)
-        self.frameExplain.setGeometry(QtCore.QRect(215, 80, 1600, 900))
+        self.frameExplain.setGeometry(QtCore.QRect(215, 80, 1550, 925))
         self.frameExplain.setObjectName("frameExplain")
         self.frameExplain.setAttribute(QtCore.Qt.WA_TranslucentBackground)
         self.gridLayout = QtWidgets.QGridLayout(self.frameExplain)
@@ -119,10 +119,10 @@ class Ui_Window3(QMainWindow):
 
 
         self.gif=QMovie('assets/explain.gif')
-        self.gif.setScaledSize(QSize(750,450))
+        self.gif.setScaledSize(QSize(625,375))
 
         self.gif2=QMovie('assets/network.gif')
-        self.gif2.setScaledSize(QSize(710,400))
+        self.gif2.setScaledSize(QSize(645,364))
 
         self.gif3=QMovie('assets/advanced.gif')
         self.gif3.setScaledSize(QSize(621,349))
@@ -172,7 +172,7 @@ class Ui_Window3(QMainWindow):
         self.expertBut.setObjectName("expertBut")
         
         self.Insideframe = QtWidgets.QFrame(self.centralwidget)
-        self.Insideframe.setGeometry(QtCore.QRect(1350,600,200,100))
+        self.Insideframe.setGeometry(QtCore.QRect(1350,600,200,200))
         self.Insideframe.setObjectName("Insideframe")
         self.Insideframe.setAttribute(QtCore.Qt.WA_TranslucentBackground)
 
@@ -187,6 +187,14 @@ class Ui_Window3(QMainWindow):
 
 
         self.Insideframe.hide()
+
+        self.popupLabel= QtWidgets.QLabel(self.Insideframe)
+        self.popupLabel.setObjectName("popupLabel")
+        self.popupLabel.setGeometry(QtCore.QRect(0,90,141,41))
+        self.popupLabel.setStyleSheet(
+            "font:  20pt \"Adobe Pi Std\";"
+            "color: rgb(255, 255, 255);"
+        )
 
 
 
@@ -244,18 +252,19 @@ class Ui_Window3(QMainWindow):
         self.expertBut.clicked.connect(lambda : self.mousePressEvent(QtGui.QMouseEvent.MouseButtonPress))
        
 
+        self.InsideBut.clicked.connect(lambda : self.disableBut())
+
         self.setCentralWidget(self.centralwidget)
         self.retranslateUi(self)
         QtCore.QMetaObject.connectSlotsByName(self)
     
     def displayGif(self):
-        self.enableBut()
         self.labelimage.setMovie(self.gif4)
         self.gif4.start()
         self.InsideBut2.hide()
+        self.enableBut()
 
     def createGif(self):
-        self.disableBut()
         path_img ='./detection/images/aligned/tmp/*'
         list_files = glob.glob(path_img)
         latest_file =max(list_files,key=os.path.getctime)
@@ -270,25 +279,33 @@ class Ui_Window3(QMainWindow):
 
 
     def disableBut(self):
-        self.easyBut.setEnabled(False)
-        self.normalBut.setEnabled(False)
-        self.advancedBut.setEnabled(False)
-        self.expertBut.setEnabled(False)
+        if self.lang ==0:
+            self.popupLabel.setText("PATIENTEZ...")
+        elif self.lang ==1:
+            self.popupLabel.setText("WAIT...")
+        elif self.lang ==2:
+            self.popupLabel.setText("")
+        elif self.lang ==3:
+            self.popupLabel.setText("")
+        else :
+            self.popupLabel.setText("")
+        self.popupLabel.update
         self.backBut2.setEnabled(False)
+        cv2.waitKey(125)
+        self.createGif()
+        self.popupLabel.setText("")
+        
 
     def enableBut(self):
-        self.easyBut.setEnabled(True)
-        self.normalBut.setEnabled(True)
-        self.advancedBut.setEnabled(True)
-        self.expertBut.setEnabled(True)
         self.backBut2.setEnabled(True)
+        self.InsideBut.setEnabled(True)
+
 
 
 
     def addtimer(self):
-        print(self.qtimer.remainingTime())
         if self.qtimer.remainingTime() <= self.timer:
-            new_timer = 450000
+            new_timer = 450000 #milliseconds
             self.qtimer.setInterval(new_timer)
             self.qtimer.start()
    
@@ -309,13 +326,19 @@ class Ui_Window3(QMainWindow):
         self.gif.start()
         if lang ==0:
             self.labeltext.setText(
-                "Qu-est ce que l'intelligence arificielle?\n"
+                "Qu-est ce que l'intelligence arificielle?\n \n"
                 "C'est une machine qui comme les humains, peut apprendre toute seule\n"
                 "En dessous c'est un exemple, la machine arrive à reconnaître des chats et des chiens\n"
                 "Chaque cercle représente un neurone, et ils sontt tous connectés entre eux, chaque ligne verticales de neurones sont appelées couches\n"
                 "Et toutes les couches forment un réseau de neurones\n"
                 "En donnant une image au reseau, les connections entre les neurones vont plus ou moins s'activer si l'image est un cat ou un chien\n"
-                "A la fin, il y a seulement 2 neurones, donc si l'un est plus activé que l'autre, la machine sait que l'image est un chat et inversement avec le chien")
+                "A la fin, il y a seulement 2 neurones, donc si l'un est plus activé que l'autre, la machine sait que l'image est un chat et inversement avec le chien\n \n"
+                "Le réseau que nous avons utilisé pour reconnaitre votre age et votre gender est un peu plus complexe\n"
+                "Le réseau en dessous :  \t\t\t\t  Notre réseau : \n"
+                "  Nombre de paramètres d'entrée : 3  \t\t\t  Nombre de paramètres d'entrée : 227*227*3 = 154 587 \n"
+                "  Nombre de paramètres modifiables : 3*4*2 = 24  \t\t  Nombre de paramètres modifiables : 23 792 713\n"
+                "  Nombre de couche intermédiaire : 1  \t\t\t  Nombre de couches intermédiaire : 174\n"
+                "  Nombre de paramètres de sortie : 2  \t\t\t  Nombre de paramètre de sortie : 11\n")
             self.labelmore.setText("Si vous voulez en apprendre plus sur l'intelligence artificielle et le deep learning, allez sur la chaine youtube de 3Blue1Brown ! ")
         elif lang==1 :
             self.labeltext.setText(
@@ -326,8 +349,13 @@ class Ui_Window3(QMainWindow):
                 "Each circle represents a neuron, as you can see they are all connected. Vertical lines of neurons are named layer.\n"
                 "The whole thing is called a  neural netwrok.\n"
                 "When you are giving an image to the network, the connections between neurons will be more or less activated, if it is a dog or a cat.\n"
-                "At end there are only 2 neurons, so if the first one is more activated than the second one, the network knows it's a cat and otherwise it's a dog"
-            )
+                "At end there are only 2 neurons, so if the first one is more activated than the second one, the network knows it's a cat and otherwise it's a dog \n \n"
+                "The network we used to detect your age and your gender is more complex... :\n"
+                "The network below :  \t\t\t\t  Our network :\n"
+                "Input parameters :  3  \t\t\t\t\t  Input parameters : 227*227*3 = 154 587\n"
+                "Parameters : 3*4*2 = 24  \t\t\t\t\t  Parameters : 23 792 713\n"
+                "number of hidden layer : 1 \t\t\t\t  Number of hidden layer : 174\n"
+                "Output parameters : 2  \t\t\t\t\t  Outputs parameters : 11\n")
             self.labelmore.setText("If you want to learn more about artificial intelligence and deep learning  go to 3Blue1Brown youtube channel ! ")
         elif lang ==2:
             self.labeltext.setText("")
@@ -358,23 +386,34 @@ class Ui_Window3(QMainWindow):
                 "Et lui dire ce qu'il aurait dû obtenir. Avec ça il va pouvoir se corriger tout seul, et progressivement s'améliorer\n"
                 "Si on regarde l'exemple en-dessous, chaque pixel de l'image est une entrée."
                 "La première couche de neurones va généralement reconnaitre les formes caractéristiques simples: les countours.\n"
-                "Les couches suivantes vont de plus en plus reconnaitre des patterns complexes\n. La dernière couche à autant de neurones qu'il y a de classes(chat,chien)\n"
-                "Cette dernière couche repsente alors les résultats du réseau \n")
+                "Les couches suivantes vont de plus en plus reconnaitre des patterns complexes. La dernière couche à autant de neurones qu'il y a de classes(chat,chien)\n"
+                "Cette dernière couche represente alors les résultats du réseau \n \n"
+                "Comparons le resau que nous avons utilisé reconnaitre votre age et votre gender et le réseau en dessous!\n"
+                "Le réseau en dessous : \t\t\t\t\t  Notre réseau : \n"
+                "  Nombre de paramètres d'entrée : 20*20*3 = 1200 \t\t  Nombre de paramètres d'entrée : 227*227*3 = 154 587 \n"
+                "  Nombre de paramètres modifiables : 108 352 \t\t\t  Nombre de paramètres modifiables : 23 792 713\n" # 108 352 = 3x3x3*64 + 3*3*64*128+2*2*128*64+64*2 obtenu de façon un peu arbitraire
+                "  Nombre de couche intermédiaire : 3  \t\t\t\t  Nombre de couches intermédiaire : 174\n"
+                "  Nombre de paramètres de sortie : 2  \t\t\t\t  Nombre de paramètre de sortie : 11\n")
             self.labelmore.setText("Si vous voulez en apprendre plus sur l'intelligence artificielle et le deep learning, allez sur la chaine youtube de 3Blue1Brown ! ")
         elif lang==1 :
             self.labeltext.setText(
                 "What does Articial Intelligence describe?\n \n"
                 "Well, the question should be what is Deep Learning?\n"
                 "It's a technique that construsts artificial neural networks and aim to mimic the structure and function of the human brain\n\n"
-                "How it works?\n \n"
+                "How it works?\n"
                 "Thanks to massive amout of data, neural networks are trained to find and recognize patterns in order to make decisions\n"
                 "During the training, we help them to know if their predictions were correct or not.\n"
                 "Based on the results the neural network will increasingly become more accurate.\n \n"
-                "Let's look at the example below\n \n"
-                "Pixels are inputs data.\n"
-                "The first layer will abstracts the pixels and detect the edges of features in the image. The next one will detect something else and so on.\n"
+                "Let's look at the example below\n"
+                "The first layer will abstracts the pixels that are input data, and detect the edges of features in the image. The next one will detect something else and so on.\n"
                 "At the end, the last layer, named output layer will return a number of value generally equals to the number of different classes(dog,cat)\n"
-                "Representing the prediction of the neural network.\n" )
+                "Representing the prediction of the neural network.\n\n"
+                "Let's compare this network with the one we used to detect your gender and your age :\n"
+                "The network below :  \t\t\t\t  Our network :\n"
+                "Input parameters :  20*20*3 = 1200  \t\t\t  Input parameters : 227*227*3 = 154 587\n"
+                "Parameters : 108 352  \t\t\t\t\t  Parameters : 23 792 713\n"
+                "number of hidden layer : 3  \t\t\t\t  Number of hidden layer : 174\n"
+                "Output parameters : 2  \t\t\t\t\t  Output parameters : 11\n")
             self.labelmore.setText("If you want to learn more about artificial intellience and deep learning  go to 3Blue1Brown youtube channel ! ")
         elif lang ==2:
             self.labeltext.setText("")
@@ -464,19 +503,20 @@ class Ui_Window3(QMainWindow):
                 "C'est seulement si cette partie est bien réalisée que le réseau apprendra. Une fois cette partie terminée, on peut enfin lancer des entrainements.\n"
                 "Mais les premiers résultats ne sont généralement pas satisfaisant, une autre phase commence alors : le fine-tunning \n"
                 "Phase durant laquelle on va faire evoluer des paramètres du réseau. Finalement, suite à un certain nombre d'essais, on atteint enfin un modèle performant\n\n"
-                "En appuyant sur le bouton Creer, vous pourrez voir, après un peu d'attente, les sorties des 25 premières couches du réseau\n"
+                "En appuyant sur le bouton Creer,  vous verrez apparitre un gif contenant une feature map(=sortie) pour chaque couche des 141 premières couches du réseau\n"
                 "Les images sont de basses qualités car le réseau travaille avec des images de tailles fixes, ces sorties vous donnerons une idée de ce que reconnait le réseau\n"
-                "Après avoir appuyé, PATIENTEZ..., puis appuyer sur le bouton d'affichage"
+                "Quand le gif sera terminée un autre bouton apparaitra pour afficher le gif !\n"
                 )
             self.labelmore.setText("Si vous voulez en apprendre plus sur l'intelligence artificielle et le deep learning, allez sur la chaine youtube de 3Blue1Brown ! ")
             self.InsideBut.setText("Creer")
             self.InsideBut2.setText("Afficher")
+            
         elif lang ==1:
             self.labeltext.setText(
                 "Before starting, you should take notice of the advanced explanation, we will based ourself on it\n \n"
                 "Indeed, we will now comeback to our case, the image classfication and more precisely the gender and age recognition\n"
                 "This classification is alot more resource demanding than the hand writting one we saw previously. We need more parameters to achieve descent result.\n"
-                "However, training all these parameters might request time and resource without guaranteed succes. \n"
+                "However, training all these parameters might request time and resource without guaranteed success. \n"
                 "Thus,  to overcome this issue we usually use transfer learning. \n \n"
                 "Whats tranfer learning? \n \n"
                 "Well it allows the improvement of learning in a new task through the transfer of knowledge from a related task that has already been learned. \n"
@@ -484,26 +524,37 @@ class Ui_Window3(QMainWindow):
                 "Consequently we tend to use a pre-trained model as a core of our model, then we add on top of it, more or less layer depending on our classification job \n"
                 "Now that we have our model, we need images, a lot of images! \n "
                 "Therefore finding these images and processing them to be able to feed them to the model is a huge part of the process \n"
-                "Only when it's done, the training will be possible. Sadly first training sessions are usually not good. To improve our model we start fine tunning paramters that matters. \n"
+                "Only when it's done, the training will be possible. Sadly first training sessions are usually not good. To improve our model we start fine tunning parameters that matters. \n"
                 "Finally after many attempts we might end up with an accurate model \n \n"
-                "Press the button that appeared, you will see what happened to your image after going through the 25 first layers of the network \n"
-                "Please wait ...\n"
+                "Press the button that appeared, you will see a gif containing a feature map(=output) for each layer of the 100 firsts layers \n"
+                "Images are not in high quality because the network  reduces increasingly the size of inputs, however this will an idea of what the network recognize\n"
+                "When the gif will be finished a new bouton will appear, press it to see the result\n"
             )
             self.labelmore.setText("If you want to learn more about artificial intellience and deep learning  go to 3Blue1Brown youtube channel ! ")
             self.InsideBut.setText("Create")
             self.InsideBut2.setText("Display")
-            pass
         elif lang ==2:
-            pass
+            self.labeltext.setText("")
+            self.labelmore.setText("")
+            self.InsideBut.setText("")
+            self.InsideBut2.setText("")
         elif lang ==3:
-            pass
+            self.labeltext.setText("")
+            self.labelmore.setText("")
+            self.InsideBut.setText("")
+            self.InsideBut2.setText("")
         else :
-            pass
+            self.labeltext.setText("")
+            self.labelmore.setText("")
+            self.InsideBut.setText("")
+            self.InsideBut2.setText("")
 
 
     def retranslateUi(self, Window3):
         _translate = QtCore.QCoreApplication.translate
         self.setWindowTitle(_translate("Window3", "MainWindow"))
+
+
 
 
 
