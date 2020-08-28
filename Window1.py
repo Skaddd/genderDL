@@ -41,8 +41,8 @@ class Ui_MainWindow(QMainWindow):
                 self.ui = Ui_Window2() #
 
                 self.ui.setupUi(lang) #
-                self.ui.show()
-                #self.window.showFullScreen() #
+                #self.ui.show()
+                self.ui.showFullScreen() #
                 self.ui.backbut.clicked.connect(lambda :self.ui.leavingWin()) #
                 self.ui.captureBut.clicked.connect(lambda : self.ui.launchCam(5)) #
                 self.ui.screenBut.clicked.connect(lambda : self.ui.takePicture())
@@ -61,9 +61,10 @@ class Ui_MainWindow(QMainWindow):
         #we also force the client to select a language before displaying anything
         def setupUi(self):
                 self.setObjectName("MainWindow")
-                self.resize(1920, 1080)
+                #self.resize(1920, 1080)
                 width = self.width()
                 self.setAnimated(True)
+                self.setStyleSheet("")
                 self.centralwidget = QtWidgets.QWidget(self)
                 self.centralwidget.setObjectName("centralwidget")
                 self.centralwidget.setStyleSheet(
@@ -75,7 +76,7 @@ class Ui_MainWindow(QMainWindow):
                         "font: 12pt \"Adobe Pi Std\";\n"
                         "color: rgb(255, 255, 255);}\n"
                         "QPushButton:pressed { border-style : inset; border-color:black}"
-                        "#centralwidget{background-image: url(:/images/assets/back1.jpg);}\n")
+                        "#centralwidget{background-image: url(:/images/assets/back1.jpg); background-repeat = no-repeat; background-position = center};\n")
 
 
                 self.titlelabel = QtWidgets.QLabel(self.centralwidget)
@@ -245,7 +246,7 @@ if __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)
     ui = Ui_MainWindow()
     ui.setupUi()
-    ui.show()
-    #MainWindow.showFullScreen()
+    #ui.show()
+    ui.showFullScreen()
     sys.exit(app.exec_())
     
