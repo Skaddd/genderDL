@@ -54,14 +54,14 @@ class Ui_Window2(QMainWindow):
         self.imgLabel.clear()
         self.ui2= Ui_Window3()
         self.ui2.setupUi(self.language) #
-        self.ui2.show()
-        #self.window.showFullScreen() #
+        #self.ui2.show()
+        self.ui2.showFullScreen() #
         self.ui2.backBut2.clicked.connect(lambda :self.ui2.close())
         self.ui2.easyBut.clicked.connect(lambda :self.ui2.displayEasy(self.language))
         self.ui2.normalBut.clicked.connect(lambda : self.ui2.displayNormal(self.language))
         self.ui2.advancedBut.clicked.connect(lambda : self.ui2.displayAdvanced(self.language))
         self.ui2.expertBut.clicked.connect(lambda : self.ui2.displayExpert(self.language))
-        self.ui2.InsideBut.clicked.connect(lambda :self.ui2.createGif())
+        #self.ui2.InsideBut.clicked.connect(lambda :self.ui2.createGif())
         self.ui2.InsideBut2.clicked.connect(lambda : self.ui2.displayGif())
 
     #Same with Window4
@@ -72,8 +72,8 @@ class Ui_Window2(QMainWindow):
         self.imgLabel.clear()
         self.ui4 = Ui_Window4()
         self.ui4.setupUi(self.language)
-        self.ui4.show()
-        #self.win.showFullScreen()
+        #self.ui4.show()
+        self.ui4.showFullScreen()
         self.ui4.backBut.clicked.connect(lambda : self.ui4.leavingWin())
         self.ui4.captureBut.clicked.connect(lambda : self.ui4.launchCamera(TIMER))
         self.ui4.screenBut.clicked.connect(lambda : self.ui4.takePicture())
@@ -92,7 +92,7 @@ class Ui_Window2(QMainWindow):
     def setupUi(self,lang):
         self.language =lang
         self.setObjectName("Window2")
-        self.resize(1920, 1080)
+        #self.resize(1920, 1080)
         width = self.width()
         self.timer = 300000
         self.centralwidget = QtWidgets.QWidget(self)
@@ -107,7 +107,7 @@ class Ui_Window2(QMainWindow):
                         "font: 14pt \"Adobe Pi Std\";\n"
                         "color: rgb(255, 255, 255);}\n"
                         "QPushButton:pressed { border-style : inset; border-color:black}"
-            "#centralwidget {background-image: url(:/images/assets/back1.jpg);}")
+            "#centralwidget{background-image: url(:/images/assets/back1.jpg); background-repeat = no-repeat; background-position = center};")
         self.titlelabel = QtWidgets.QLabel(self.centralwidget)
         self.titlelabel.setGeometry(QtCore.QRect(width/4, 20, 1200, 61))
         self.titlelabel.setTextFormat(QtCore.Qt.RichText)
@@ -364,7 +364,6 @@ class Ui_Window2(QMainWindow):
     #This method concerns the Qtimer, because we wanted to build something more complex, every time someone presses a button or just the screen
     #the Qtimer will restart
     def addtimer(self):
-        print(self.qtim.remainingTime())
         if  self.qtim.remainingTime() <= 1200000:
             new_timer = 600000
             self.qtim.setInterval(new_timer)
@@ -389,7 +388,10 @@ class Ui_Window2(QMainWindow):
 
     # this metohd increment the logic value , and will let us know when someone wants to take a picture
     def takePicture(self):
-        self.disableBut()
+        if self.stoploop==0:
+            self.disableBut()
+        else : 
+            pass
         self.logic+=1
 
 
@@ -445,7 +447,7 @@ class Ui_Window2(QMainWindow):
                         TIMER = TIMER-1
                 else : # while else is a loop in python!
                     date=time.strftime("%Y-%m-%d-%H-%M %S")
-                    cv2.imwrite('portrait/im-'+date+'.jpg',img)
+                    cv2.imwrite(resource_path('portrait\\im-'+date+'.jpg'),img)
                     if self.language==0:
                         self.waitingLabel2.setText("PATIENTEZ..")
                     elif self.language==1:
@@ -505,7 +507,8 @@ class Ui_Window2(QMainWindow):
     def displayResults(self):
         
         path = os.path.join("portrait","*")
-        list_images = glob.glob(path)
+        list_images = glob.glob(resource_path(path))
+        print(list_images)
         latest_img = max(list_images,key=os.path.getctime) 
         try :
             age_deteced,gender_detected =prediction(latest_img)
@@ -519,7 +522,7 @@ class Ui_Window2(QMainWindow):
                 gender_detected[k]=gen
             
             img_dir = os.path.join('detection','images','detected','*')
-            list_of_files = glob.glob(img_dir) 
+            list_of_files = glob.glob(resource_path(img_dir)) 
             latest_file = max(list_of_files, key=os.path.getctime)
 
             if latest_file.endswith(".png"):
@@ -555,32 +558,32 @@ class Ui_Window2(QMainWindow):
     #we basically save the raw image, the result image and the aligned faces from the raw image
     def saveImg(self):
         tmp_path = os.path.join('detection','images','aligned','tmp','*.png')
-        list_tmp = glob.glob(tmp_path)
+        list_tmp = glob.glob(resource_path(tmp_path))
         print(list_tmp)
         for file in list_tmp:
-            shutil.copy(file,os.path.join('detection','images','aligned','saved',''))
+            shutil.copy(file,resource_path(os.path.join('detection','images','aligned','saved','')))
             
         
 
         if self.facedetec==0:    
             portrait_path = os.path.join("portrait","*.jpg")
-            list_portrait = glob.glob(portrait_path)
+            list_portrait = glob.glob(resource_path(portrait_path))
             latest_portrait = max(list_portrait,key=os.path.getctime)
-            shutil.copy(latest_portrait,os.path.join('portrait','saved',''))
+            shutil.copy(latest_portrait,resource_path(os.path.join('portrait','saved','')))
         else: 
             pass
         
         detected_path = os.path.join('detection','images','detected','*.png')
-        list_detected=glob.glob(detected_path)
+        list_detected=glob.glob(resource_path(detected_path))
         latest_detected = max(list_detected,key=os.path.getctime)
-        shutil.copy(latest_detected,os.path.join('detection','images','detected','saved',''))
+        shutil.copy(latest_detected,resource_path(os.path.join('detection','images','detected','saved','')))
 
     #This method allow us to remove the last image taken automatically if the client doesn't activly save its image
     def removeImg(self):
         if self.facedetec==0:
                 
             portrait_path = os.path.join("portrait","*.jpg")
-            list_portrait = glob.glob(portrait_path)
+            list_portrait = glob.glob(resource_path(portrait_path))
             print(list_portrait)
             if not list_portrait:
                 pass   
@@ -589,7 +592,7 @@ class Ui_Window2(QMainWindow):
                 os.remove(latest_portrait)
             
             detected_path = os.path.join('detection','images','detected','*.png')
-            list_detected=glob.glob(detected_path)
+            list_detected=glob.glob(resource_path(detected_path))
             if not list_detected:
                 pass
             else :
@@ -604,11 +607,22 @@ class Ui_Window2(QMainWindow):
         self.setWindowTitle(_translate("Window2", "MainWindow"))
         
 
+def resource_path(relative_path):
+    """ Get absolute path to resource, works for dev and for PyInstaller """
+    try:
+        # PyInstaller creates a temp folder and stores path in _MEIPASS
+        base_path = sys._MEIPASS
+    except Exception:
+        base_path = os.path.abspath(".")
+
+    return os.path.join(base_path, relative_path)
+
 
 if __name__ == "__main__":
     import sys
     app = QtWidgets.QApplication(sys.argv)
     ui = Ui_Window2()
     ui.setupUi(lang=1)
-    ui.show()
+    ui.showFullScreen()
+    #ui.show()
     sys.exit(app.exec_())
