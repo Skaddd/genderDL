@@ -31,7 +31,7 @@ class Ui_Window4(QMainWindow):
         self.ui5.setupUi(self.language)
         self.ui5.show()
         self.ui5.stayBut.clicked.connect(lambda : self.ui5.closeWindow())
-        reset_timer = 300000
+        reset_timer = 300000 
         self.ui5.stayBut.clicked.connect(lambda : self.qtim.start(reset_timer))
         self.ui5.leaveBut.clicked.connect(lambda : self.ui5.closeWindow())
         self.ui5.leaveBut.clicked.connect(lambda : self.close())
@@ -44,7 +44,7 @@ class Ui_Window4(QMainWindow):
     #this method contains a huge part of object positioning (frames, layout ,...)
     def setupUi(self,lang):
         self.setObjectName("Window4")
-        self.resize(1920, 1080)
+        #self.resize(1920, 1080)
         self.setAnimated(True)
         self.language = lang
         self.centralwidget = QtWidgets.QWidget(self)
@@ -84,7 +84,7 @@ class Ui_Window4(QMainWindow):
                 "background : none;}"
             "QScrollBar::add-page:horizontal, QScrollBar::sub-page:horizontal{"
                 "background: none;}"
-            "#centralwidget{background-image: url(:/images/assets/back1.jpg);}")
+            "#centralwidget{background-image: url(:/images/assets/back1.jpg); background-repeat = no-repeat; background-position = center};")
 
         self.logic =1
         self.value =0
@@ -299,7 +299,8 @@ class Ui_Window4(QMainWindow):
                 "3. La Photo sera prise après 5 secondes.\n"
                 "4. Choisi le style que tu aimes dans le catalogue d'image au dessus!\n"
                 "5. Une fois que tu as choisi le style que tu veux en appuyant sur le bouton correspondant, applique le style\n"
-                "6. Soit patient cela prend du temps\n")
+                "6. Soit patient cela prend du temps\n"
+                "7. Votre image sera automatiquement supprimée dès qu'une nouvelle photo sera prise\n")
 
 
 
@@ -315,7 +316,8 @@ class Ui_Window4(QMainWindow):
                 "3. It will take a photo within 5 seconds.\n"
                 "4. Select a style image from the different images presented above!\n"
                 "5. Once you selected your style use the button  Apply Style to see the result!\n"
-                "6. Be patient, it might take some time\n")
+                "6. Be patient, it might take some time\n"
+                "7. Your image will be automatically discarded once a new photo is taken\n")
 
         elif self.language ==2:
             self.labeltitle.setText("")
@@ -357,7 +359,6 @@ class Ui_Window4(QMainWindow):
     
 
     def addtimer(self):
-        print(self.qtim.remainingTime())
         if self.qtim.remainingTime() <= self.timer:
             new_timer =  450000
             self.qtim.setInterval(new_timer)
@@ -436,10 +437,10 @@ class Ui_Window4(QMainWindow):
                         prev = cur 
                         TIMER = TIMER-1
                 else :
+                    self.removeImg
                     date=time.strftime("%Y-%m-%d-%H-%M")
-                    cv2.imwrite('portrait/im-'+date+'.jpg',img)
-                    cv2.waitKey(500)
-                    self.enableBut()
+                    cv2.imwrite(resource_path('portrait\\im-'+date+'.jpg'),img)
+                    cv2.waitKey(250)
                     self.value+=1
                     break
 
@@ -447,21 +448,7 @@ class Ui_Window4(QMainWindow):
         cam.release()
         cv2.destroyAllWindows()
     
-
-    def disableBut(self):
-        self.screenBut.setEnabled(False)
-        self.captureBut.setEnabled(False)
-        self.transferBut.setEnabled(False)
-        self.backBut.setEnabled(False)
-
-    def enableBut(self):
-        self.screenBut.setEnabled(True)
-        self.captureBut.setEnabled(True)
-        self.transferBut.setEnabled(True)
-        self.backBut.setEnabled(True)
-
     def takePicture(self):
-        self.disableBut()
         self.logic+=1
         
 
@@ -483,7 +470,7 @@ class Ui_Window4(QMainWindow):
     def displayTransfer(self):
         self.waitingLabel2.show()
         path = os.path.join("portrait","*")
-        list_images = glob.glob(path)
+        list_images = glob.glob(resource_path(path))
         
         if self.namestyle=="" or  not list_images:
             print("you did not selected an image")
@@ -501,7 +488,7 @@ class Ui_Window4(QMainWindow):
             latest_img = max(list_images,key=os.path.getctime)
             self.stoploop=1
                     
-            path_img = 'pictures/'+self.namestyle
+            path_img = resource_path('pictures\\'+self.namestyle)
             if os.path.isfile(path_img+'.png'):
                 path_img = path_img+'.png'
             elif os.path.isfile(path_img+'.jpg'):
@@ -516,13 +503,29 @@ class Ui_Window4(QMainWindow):
             self.displayImage(im_transfer)
             self.waitingLabel2.hide()
 
-
+    def removeImg(self):
+            portrait_path = os.path.join("portrait","*.jpg")
+            list_portrait = glob.glob(resource_path(portrait_path))
+            if not list_portrait:
+                pass   
+            else :
+                latest_portrait = max(list_portrait,key=os.path.getctime)
+                os.remove(latest_portrait)
 
 
     def retranslateUi(self):
         _translate = QtCore.QCoreApplication.translate
         self.setWindowTitle(_translate("Window4", "MainWindow"))
  
+def resource_path(relative_path):
+    """ Get absolute path to resource, works for dev and for PyInstaller """
+    try:
+        # PyInstaller creates a temp folder and stores path in _MEIPASS
+        base_path = sys._MEIPASS
+    except Exception:
+        base_path = os.path.abspath(".")
+
+    return os.path.join(base_path, relative_path)
 
 if __name__ == "__main__":
     import sys
@@ -530,5 +533,6 @@ if __name__ == "__main__":
     ui=Ui_Window4()
     ui.setupUi(lang=1)
     ui.show()
+    #ui.showFullScreen()
     Window4 = QtWidgets.QMainWindow()
     sys.exit(app.exec_())
