@@ -9,93 +9,50 @@ else means that the text must be written in Lux
 """
 
 
+
 from PyQt5 import QtCore, QtGui, QtWidgets
-from PyQt5.QtGui import *
-from PyQt5.QtWidgets import *
-from PyQt5.QtGui import QImage,QPixmap, QMovie, QColor
 from PyQt5.QtWidgets import QMainWindow
+from PyQt5.QtGui import QMovie,QPixmap
 from PyQt5.QtCore import QSize
 
-import math
 import cv2
-import source 
-import time
-import glob
 import os
-import shutil
+import glob
+import source
 
-#prediction is a method that calls the pre-trained models
 
-from predict import prediction
+from display import fin
+from Window5 import Ui_Window5
 
-#We will call the follow windows from window2 so we need to import the classes to get the acces
-
-from Window3 import Ui_Window3
-from Window4 import Ui_Window4
-
-#timer beofre taking a picture
-global TIMER
-TIMER = int(5) 
-
-class Ui_Window2(QMainWindow):
+class Ui_Window3(QMainWindow):
 
     def __init__(self):
-        super(Ui_Window2,self).__init__()
+        super(Ui_Window3,self).__init__()
 
-    # this method will open window3 by calling the setupUi from the Ui_Window3
-    #every signals are also setup up with the corresponding slots( buttons,etc)
-    #clearing the imglabel is also a plus 
-    #Because Qtimer are always running in background, in order to close automacially windows, when we open window3 from window2
-    #we don't want the window2 to close itself, so we restart the timer with a big value
-    def openWindow3(self):
-        self.reset_values()
-        self.timer = 1200000
-        self.qtim.start(self.timer)
-        self.imgLabel.clear()
-        self.ui2= Ui_Window3()
-        self.ui2.setupUi(self.language) #
-        #self.ui2.show()
-        self.ui2.showFullScreen() #
-        self.ui2.backBut2.clicked.connect(lambda :self.ui2.close())
-        self.ui2.easyBut.clicked.connect(lambda :self.ui2.displayEasy(self.language))
-        self.ui2.normalBut.clicked.connect(lambda : self.ui2.displayNormal(self.language))
-        self.ui2.advancedBut.clicked.connect(lambda : self.ui2.displayAdvanced(self.language))
-        self.ui2.expertBut.clicked.connect(lambda : self.ui2.displayExpert(self.language))
-        #self.ui2.InsideBut.clicked.connect(lambda :self.ui2.createGif())
-        self.ui2.InsideBut2.clicked.connect(lambda : self.ui2.displayGif())
+    #method that opens window5 and setup everything
+    def openWindow5(self):
+        self.qtimer.stop()
+        self.ui5=Ui_Window5()
+        self.ui5.setupUi(self.lang)
+        self.ui5.show()
+        self.ui5.stayBut.clicked.connect(lambda : self.ui5.closeWindow())
+        reset_timer = 150000
+        self.ui5.stayBut.clicked.connect(lambda : self.qtimer.start(reset_timer))
 
-    #Same with Window4
-    def openWindow4(self):
-        self.timer = 1200000
-        self.qtim.start(self.timer)
-        self.reset_values()
-        self.imgLabel.clear()
-        self.ui4 = Ui_Window4()
-        self.ui4.setupUi(self.language)
-        #self.ui4.show()
-        self.ui4.showFullScreen()
-        self.ui4.backBut.clicked.connect(lambda : self.ui4.leavingWin())
-        self.ui4.captureBut.clicked.connect(lambda : self.ui4.launchCamera(TIMER))
-        self.ui4.screenBut.clicked.connect(lambda : self.ui4.takePicture())
-        self.ui4.transferBut.clicked.connect(lambda : self.ui4.displayTransfer())
-        for k in range (self.ui4.img_len):
-            self.ui4.buttons[(k)].clicked.connect(self.ui4.make_callback(k))
+        self.ui5.leaveBut.clicked.connect(lambda : self.ui5.closeWindow())
+        self.ui5.leaveBut.clicked.connect(lambda : self.close())
+        self.ui5.windowTitleChanged.connect(lambda :self.close())
 
-   
 
-    #This method  setups  everything inside the window2
-    #language will be used to display the text in the right language
-    #There we have a title label, 4 buttons in a frame, 2text label separeted by a button and finally a label with pixmap to display the camera output
-    # We want to keep the background image as a global background , thus most of Layouts or Widgets have transparent background
-    #We initialize the timer variable that we will use later to close automatically the window
-    #This window contains a lot of widgets and layouts,
+    #This method is build like previous methods we saw
+    #We just added gif that are readable thanks to QMovie Object
     def setupUi(self,lang):
-        self.language =lang
-        self.setObjectName("Window2")
+        self.lang = lang
+        self.setObjectName("Window3")
         #self.resize(1920, 1080)
-        width = self.width()
-        self.timer = 300000
         self.centralwidget = QtWidgets.QWidget(self)
+        
+        self.timer = 300000 # in milliseconds
         self.centralwidget.setObjectName("centralwidget")
         self.centralwidget.setStyleSheet(
             "QPushButton{\n"
@@ -109,520 +66,502 @@ class Ui_Window2(QMainWindow):
                         "QPushButton:pressed { border-style : inset; border-color:black}"
             "#centralwidget{background-image: url(:/images/assets/back1.jpg); background-repeat = no-repeat; background-position = center};")
         self.titlelabel = QtWidgets.QLabel(self.centralwidget)
-        self.titlelabel.setGeometry(QtCore.QRect(width/4, 20, 1200, 61))
-        self.titlelabel.setTextFormat(QtCore.Qt.RichText)
-        self.titlelabel.setScaledContents(True)
-        self.titlelabel.setAlignment(QtCore.Qt.AlignCenter)
+        self.titlelabel.setGeometry(QtCore.QRect(30, 30, 1800, 71))
         self.titlelabel.setObjectName("titlelabel")
-        self.titlelabel.setAttribute(QtCore.Qt.WA_TranslucentBackground)
         self.titlelabel.setStyleSheet(
-            "font: 32pt \"Adobe Pi Std\";\n"
+            "font: 32pt \"Adobe Pi Std\";"
             "color: rgb(255, 255, 255);")
-        
+        self.titlelabel.setAlignment(QtCore.Qt.AlignLeft)
 
-
-        self.frameInfo = QtWidgets.QFrame(self.centralwidget)
-        self.frameInfo.setGeometry(QtCore.QRect(650, 160, 1250, 450))
-        self.frameInfo.setObjectName("frameInfo")
-
-        self.gridLayout_frameInfo = QtWidgets.QGridLayout(self.frameInfo)
-        self.gridLayout_frameInfo.setObjectName("gridLayout_frameInfo")
-
-
-        self.HBoxBottom=QtWidgets.QHBoxLayout()
-        self.HBoxBottom.setObjectName("HBoxBottom")
-
-        self.waitingLabel2=QtWidgets.QLabel(self.frameInfo)
-        self.waitingLabel2.setObjectName("waitingLabel2")
-        self.waitingLabel2.setAttribute(QtCore.Qt.WA_TranslucentBackground)
-        self.waitingLabel2.setStyleSheet(
-            "font: italic  25pt \"Adobe Pi Std\";\n"
-            "color: rgb(255, 255, 255);")
-
-            
-
-        self.infoBut = QtWidgets.QPushButton(self.frameInfo)
-        self.infoBut.setObjectName("infoBut")
-        self.infoBut.setFixedSize(QSize(201,41))
-
-
-        self.HBoxBottom.addWidget(self.waitingLabel2)
-        self.HBoxBottom.addWidget(self.infoBut,alignment=QtCore.Qt.AlignVCenter | QtCore.Qt.AlignLeft)
-        
-
-        self.gridLayout_frameInfo.addLayout(self.HBoxBottom, 1, 0, 1, 1)
-
-        self.vBoxTop = QtWidgets.QVBoxLayout()
-        self.vBoxTop.setObjectName("vBoxTop")
-
-        self.infoLab = QtWidgets.QLabel(self.frameInfo)
-        self.infoLab.setObjectName("infoLab")
-        self.infoLab.setAttribute(QtCore.Qt.WA_TranslucentBackground)
-        self.infoLab.setAlignment(QtCore.Qt.AlignTop | QtCore.Qt.AlignLeft)
-        self.infoLab.setStyleSheet(
-            "font: italic 18pt \"Adobe Pi Std\";\n"
-            "color: rgb(255, 255, 255);")
-
-
-        self.vBoxTop.addWidget(self.infoLab)
-        self.gridLayout_frameInfo.addLayout(self.vBoxTop, 0, 0, 1, 1)
-
-
-        self.imgLabel = QtWidgets.QLabel(self.centralwidget)
-        self.imgLabel.setGeometry(QtCore.QRect(40, 130, 581, 421))
-        self.imgLabel.setFrameShape(QtWidgets.QFrame.Box)
-        self.imgLabel.setFrameShadow(QtWidgets.QFrame.Raised)
-        self.imgLabel.setAttribute(QtCore.Qt.WA_TranslucentBackground)
-        self.imgLabel.setLineWidth(6)
-        self.imgLabel.setMidLineWidth(0)
-        self.imgLabel.setObjectName("imgLabel")
-
-        self.resultLabel = QtWidgets.QLabel(self.centralwidget)
-        self.resultLabel.setGeometry(QtCore.QRect(40,550,600,60))
-        self.resultLabel.setAttribute(QtCore.Qt.WA_TranslucentBackground)
-        self.resultLabel.setObjectName("resultLabel")
-        self.resultLabel.setStyleSheet(
-            "font: italic 14pt \"Adobe Pi Std\";\n"
-            "color: rgb(119,181,254);"
-        )
-
-        self.lowerframe = QtWidgets.QFrame(self.centralwidget)
-        self.lowerframe.setGeometry(QtCore.QRect(30,950, 1900, 91))
-        self.lowerframe.setAttribute(QtCore.Qt.WA_TranslucentBackground)
-        self.lowerframe.setObjectName("lowerframe")
-
-
-        self.captureBut = QtWidgets.QPushButton(self.lowerframe)
-        self.captureBut.setGeometry(QtCore.QRect(20, 30, 201, 41))
-        self.captureBut.setMouseTracking(True)
-        self.captureBut.setObjectName("captureBut")
-
-
-        self.screenBut = QtWidgets.QPushButton(self.lowerframe)
-        self.screenBut.setGeometry(QtCore.QRect(300, 30, 201, 41))
-        self.screenBut.setMouseTracking(True)
-        self.screenBut.setObjectName("screenBut")
-
-
-
-        self.moreBut = QtWidgets.QPushButton(self.lowerframe)
-        self.moreBut.setGeometry(QtCore.QRect(900,30,201,41))
-        self.moreBut.setObjectName("moreBut")
-
-
-        self.backbut = QtWidgets.QPushButton(self.lowerframe)
-        self.backbut.setGeometry(QtCore.QRect(1750, 30, 110, 41))
-        self.backbut.setMouseTracking(True)
+        self.backBut2= QtWidgets.QPushButton(self.centralwidget)
+        self.backBut2.setGeometry(QtCore.QRect(1780,980,110,41))
+        self.backBut2.setObjectName("backBut2")
         icon = QtGui.QIcon('assets/r.png')
-        self.backbut.setIcon(icon)
-        self.backbut.setIconSize(QtCore.QSize(30,25))
-        self.backbut.setObjectName("backbut")
+        self.backBut2.setIcon(icon)
+        self.backBut2.setIconSize(QtCore.QSize(30,25))
+
+        self.framelvl = QtWidgets.QFrame(self.centralwidget)
+        self.framelvl.setGeometry(QtCore.QRect(15, 160, 200, 880))
+        self.framelvl.setAttribute(QtCore.Qt.WA_TranslucentBackground)
+        self.framelvl.setObjectName("framelvl")
+        
+
+
+        self.frameExplain = QtWidgets.QFrame(self.centralwidget)
+        self.frameExplain.setGeometry(QtCore.QRect(215, 80, 1550, 925))
+        self.frameExplain.setObjectName("frameExplain")
+        self.frameExplain.setAttribute(QtCore.Qt.WA_TranslucentBackground)
+        self.gridLayout = QtWidgets.QGridLayout(self.frameExplain)
+        self.gridLayout.setObjectName("gridLayout")
+
+
+        self.verticalLayout_text = QtWidgets.QVBoxLayout()
+        self.verticalLayout_text.setObjectName("verticalLayout_text")
+
+        self.labeltext = QtWidgets.QLabel(self.frameExplain)
+        self.labeltext.setObjectName("labeltext")
+        self.labeltext.setScaledContents(True)
+        self.labeltext.setStyleSheet(
+            "font: 14pt \"Adobe Pi Std\";"
+            "color: rgb(255, 255, 255);")
+        self.verticalLayout_text.addWidget(self.labeltext)
+        self.gridLayout.addLayout(self.verticalLayout_text, 0, 0, 1, 2)
+
+        self.verticalLayout_img = QtWidgets.QVBoxLayout()
+        self.verticalLayout_img.setObjectName("verticalLayout_img")
+
+        self.labelimage = QtWidgets.QLabel(self.frameExplain)
+        self.labelimage.setObjectName("labelimage")
+
+        self.verticalLayout_img.addWidget(self.labelimage)
+        self.gridLayout.addLayout(self.verticalLayout_img, 2, 0, 1, 2)
 
 
 
-        self.framekeep = QtWidgets.QFrame(self.centralwidget)
-        self.framekeep.setGeometry(QtCore.QRect(30,650,700,150))
-        self.framekeep.setObjectName("framekeep")
-        self.framekeep.hide()
+        self.gif=QMovie('assets/explain.gif')
+        self.gif.setScaledSize(QSize(625,375))
 
-        self.VLayout_framekeep = QtWidgets.QVBoxLayout(self.framekeep)
-        self.VLayout_framekeep.setObjectName("gridLayout_keepframe")
+        self.gif2=QMovie('assets/network.gif')
+        self.gif2.setScaledSize(QSize(645,364))
 
-
-        self.keepPhotoBut = QtWidgets.QPushButton(self.framekeep)
-        self.keepPhotoBut.setObjectName("keepPhotoBut")
-
-        self.keepPhotoBut.setText("Sauvegarder")
-        self.keepPhotoBut.setFixedSize(QSize(141,41))
+        self.gif3=QMovie('assets/advanced.gif')
+        self.gif3.setScaledSize(QSize(621,349))
 
 
+        self.gif4=QMovie('tmp/movie.gif')
+        self.gif4.setScaledSize(QSize(320,240))
 
-        self.KeepLabel = QtWidgets.QLabel(self.framekeep)
-        self.KeepLabel.setObjectName("keepLabel")
-        self.KeepLabel.setStyleSheet(
-            "font: italic 14pt \"Adobe Pi Std\";\n"
-            "color: rgb(255,255,255);"
+        self.verticalLayout_more = QtWidgets.QVBoxLayout()
+        self.verticalLayout_more.setObjectName("verticalLayout_more")
+
+        self.HboxBot = QtWidgets.QHBoxLayout()
+        self.HboxBot.setObjectName("Hboxbot")
+
+        self.labelmore = QtWidgets.QLabel(self.frameExplain)
+        self.labelmore.setObjectName("labelmore")
+        self.labelmore.setStyleSheet(
+            "font: italic 14pt \"Adobe Pi Std\";"
+            "color: rgb(255, 255, 255);")
+        self.labelmore.setAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignVCenter)
+        self.labelmore.setScaledContents(True)
+
+        self.labelLogo = QtWidgets.QLabel(self.frameExplain)
+        self.labelLogo.setObjectName("labelLogo")
+        self.labelLogo.setAlignment(QtCore.Qt.AlignLeft | QtCore.Qt.AlignVCenter)
+        self.pixmap = QPixmap('assets/3b1b.png').scaled(64,64)
+
+        self.HboxBot.addWidget(self.labelmore)
+        self.HboxBot.addWidget(self.labelLogo)
+        self.verticalLayout_more.addLayout(self.HboxBot)
+        self.gridLayout.addLayout(self.verticalLayout_more,4,0,1,1)
+
+        self.easyBut = QtWidgets.QPushButton(self.framelvl)
+        self.easyBut.setGeometry(QtCore.QRect(0, 50, 141, 41))
+        self.easyBut.setObjectName("easyBut")
+
+        self.normalBut = QtWidgets.QPushButton(self.framelvl)
+        self.normalBut.setGeometry(QtCore.QRect(0, 300, 141, 41))
+        self.normalBut.setObjectName("normalBut")
+
+        self.advancedBut = QtWidgets.QPushButton(self.framelvl)
+        self.advancedBut.setGeometry(QtCore.QRect(0, 550, 141, 41))
+        self.advancedBut.setObjectName("advancedBut")
+
+        self.expertBut=QtWidgets.QPushButton(self.framelvl)
+        self.expertBut.setGeometry(QtCore.QRect(0,800,141,41))
+        self.expertBut.setObjectName("expertBut")
+        
+        self.Insideframe = QtWidgets.QFrame(self.centralwidget)
+        self.Insideframe.setGeometry(QtCore.QRect(1350,600,200,200))
+        self.Insideframe.setObjectName("Insideframe")
+        self.Insideframe.setAttribute(QtCore.Qt.WA_TranslucentBackground)
+
+        self.InsideBut=QtWidgets.QPushButton(self.Insideframe)
+        self.InsideBut.setGeometry(QtCore.QRect(0,0,141,41))
+        self.InsideBut.setObjectName("InsideBut")
+
+        self.InsideBut2 = QtWidgets.QPushButton(self.Insideframe)
+        self.InsideBut2.setGeometry(QtCore.QRect(0,50,141,41))
+        self.InsideBut2.setObjectName("InsideBut2")
+        self.InsideBut2.hide()
+
+
+        self.Insideframe.hide()
+
+        self.popupLabel= QtWidgets.QLabel(self.Insideframe)
+        self.popupLabel.setObjectName("popupLabel")
+        self.popupLabel.setGeometry(QtCore.QRect(0,90,141,41))
+        self.popupLabel.setStyleSheet(
+            "font:  20pt \"Adobe Pi Std\";"
+            "color: rgb(255, 255, 255);"
         )
 
-        self.VLayout_framekeep.addWidget(self.keepPhotoBut)
-        self.VLayout_framekeep.addWidget(self.KeepLabel)
-        
 
-        if self.language==0:
-            self.titlelabel.setText( "Intelligence artificielle qui prédit le sexe et l'âge")
-            self.captureBut.setText("Camera")
-            self.infoBut.setText( "Comment ça marche?")
-            self.backbut.setText( "retour")
-            self.screenBut.setText("Prendre Photo")
-            self.infoLab.setText(
-                "1. L'IA va essayer de deviner votre sexe et votre age!\n"
-                "2. Lancez la camera avec le bon bouton\n"
-                "3. Regarder bien la camera et prenez une photo de vous! La photo sera prise dans 5 secondes.\n"
-                "4. Directement après l'Intelligence artificielle va predire plus ou moins précisement ton age et ton genre! \n"
-                "5. Cela peut prendre un peu de temps...\n"
-                "6. Pour compendre ce qui s'est passé et les résults obtenus, appuie sur le bouton en-dessous! \n"
-                "7. Envie d'essayer d'autre chose? Appuyez sur le bouton  Autre Jeu! ")
-            self.moreBut.setText("Autre Jeu")
-            self.KeepLabel.setText(
-                "Contribuer à nos projets d'intelligence artificielle en sauvegardant votre image.\n"
-                "Elle ne sera utilisée que par le Science Center et seulement à des fins de recherches.\n"
-                "Autrement l'image sera automatiquement supprimée"
-            )
-            
 
-        elif self.language==1:
-            self.titlelabel.setText("Artifical Intelligence Performing Gender and Age prediction")
-            self.captureBut.setText("Capture")
-            self.infoBut.setText("How it Works?")
-            self.backbut.setText("back")
-            self.screenBut.setText("Take picture")
-            self.infoLab.setText(
-                "1. The AI is going to guess your age and your gender!\n"
-                "2. But it needs a picture of you! So launch the camera with the button caputre.\n"
-                "3. Look the camera then take a picture when you are ready. The photo will be saved within 5 seconds.\n"
-                "4. From this image, the AI will predicit more or less correctly your age and gender!\n"
-                "5. This process might take some time, be patient...\n"
-                "5. To understand what happened or why the results are so good! or so bad... press the button below!\n"
-                "6. Want to try something else? press the  Play More button! ")
-            self.moreBut.setText("Play more!")
-            self.KeepLabel.setText(
-                "Contribute to our AI projects by saving your image to our database\n"
-                "It will be only used by the Sciencer Center and only for research purpose\n"
-                "Otherwise the picture will be discarded automtically"
-            )
+        if lang ==0:
+            self.titlelabel.setText("Comprendre le fonctionnement de cette Inteligence Arificielle ")
+            self.easyBut.setText("Facile")
+            self.normalBut.setText("Normal")
+            self.advancedBut.setText( "Avancé")
+            self.expertBut.setText("Expert")
+            self.backBut2.setText("retour")
+            self.labeltext.setText("")
+        elif lang ==1:
+            self.titlelabel.setText("Through different level of undestanding, learn how this artifical intelligence works")
+            self.easyBut.setText("Easy")
+            self.normalBut.setText("Normal")
+            self.advancedBut.setText("Advanced")
+            self.expertBut.setText("Expert")
+            self.backBut2.setText("back")
+            self.labeltext.setText("")
 
-                
-        elif self.language==2:
-        
+        elif lang ==2:
             self.titlelabel.setText("")
-            self.captureBut.setText("")
-            self.infoBut.setText("")
-            self.backbut.setText("")
-            self.screenBut.setText("")
-            self.infoLab.setText("")
-            self.moreBut.setText("")
-            self.KeepLabel.setText("")
-        elif self.language==3:
+            self.easyBut.setText("")
+            self.normalBut.setText("")
+            self.advancedBut.setText("")
+            self.expertBut.setText("")
+            self.backBut2.setText("")
+            self.labeltext.setText("")
+        elif lang ==3:
             self.titlelabel.setText("")
-            self.captureBut.setText("")
-            self.infoBut.setText("")
-            self.backbut.setText("")
-            self.screenBut.setText("")
-            self.infoLab.setText("")
-            self.moreBut.setText("")
-            self.KeepLabel.setText("")
-            pass
-        else:
+            self.easyBut.setText("")
+            self.normalBut.setText("")
+            self.advancedBut.setText("")
+            self.expertBut.setText("")
+            self.backBut2.setText("")
+            self.labeltext.setText("")
+        else :
             self.titlelabel.setText("")
-            self.captureBut.setText("")
-            self.infoBut.setText("")
-            self.backbut.setText("")
-            self.screenBut.setText("")
-            self.infoLab.setText("")
-            self.moreBut.setText("")
-            self.KeepLabel.setText("")
-            pass
-
-        self.reset_values()
-
-        #we create a QTimer object which will play its role as a timer and send signal when hitting 0s. Thus we will be able to close the window
-        self.qtim = QtCore.QTimer(self.centralwidget)
-        self.qtim.start(self.timer)
-        self.qtim.timeout.connect(self.close)
+            self.easyBut.setText("")
+            self.normalBut.setText("")
+            self.advancedBut.setText("")
+            self.expertBut.setText("")
+            self.backBut2.setText("")
+            self.labeltext.setText("")
 
 
-        #We need to know when buttons are clicked on this window for the addtimer method
+        self.qtimer = QtCore.QTimer(self)
+        self.qtimer.start(self.timer)
+        self.qtimer.timeout.connect(self.openWindow5)
 
-        self.captureBut.clicked.connect(lambda: self.mousePressEvent(QtGui.QMouseEvent.MouseButtonPress))
-        self.screenBut.clicked.connect(lambda: self.mousePressEvent(QtGui.QMouseEvent.MouseButtonPress))
-        self.infoBut.clicked.connect(lambda : self.mousePressEvent(QtGui.QMouseEvent.MouseButtonPress))
 
-        
-        
+        self.easyBut.clicked.connect(lambda: self.mousePressEvent(QtGui.QMouseEvent.MouseButtonPress))
+        self.normalBut.clicked.connect(lambda: self.mousePressEvent(QtGui.QMouseEvent.MouseButtonPress))
+        self.advancedBut.clicked.connect(lambda: self.mousePressEvent(QtGui.QMouseEvent.MouseButtonPress))
+        self.expertBut.clicked.connect(lambda : self.mousePressEvent(QtGui.QMouseEvent.MouseButtonPress))
+       
+
+        self.InsideBut.clicked.connect(lambda : self.disableBut())
+
         self.setCentralWidget(self.centralwidget)
-        self.retranslateUi()
+        self.retranslateUi(self)
         QtCore.QMetaObject.connectSlotsByName(self)
-
-    #This method prevents a lot of bottleneck problems
-    #the stoploop is used to traceback the current state of the camera so we can close it when we change window
-    #the logic value is used to know when a picture must be taken, so screenBut only works if someone took a picture
-    #and self.value to make it more robust 
-    #face detect is used to know if the face_detection algoritm was able to detect faces from the image taken
-    #we also clear labels because we don't want to keep displayed the previous results
-    def reset_values(self):
-        
-        self.logic =1
-        self.value =0
-        self.stoploop = 1
-        self.facedetec =0
-        
-        self.imgLabel.clear()
-        self.framekeep.hide()
-        self.resultLabel.setText("")
-        self.waitingLabel2.setText("")
- 
-    #This method concerns the Qtimer, because we wanted to build something more complex, every time someone presses a button or just the screen
-    #the Qtimer will restart
-    def addtimer(self):
-        if  self.qtim.remainingTime() <= 1200000:
-            new_timer = 600000
-            self.qtim.setInterval(new_timer)
-            self.qtim.start()
-
     
+    def displayGif(self):
+        self.labelimage.setMovie(self.gif4)
+        self.gif4.start()
+        self.InsideBut2.hide()
+        self.enableBut()
 
-    #This method will allow us to know if someone clicked on the window or buttons, to know is someone is using actively the app,
-    #if not the timer will hit 0 and close the window
+    def createGif(self):
+        path_img ='./detection/images/aligned/tmp/*'
+        list_files = glob.glob(path_img)
+        latest_file =max(list_files,key=os.path.getctime)
+        if not latest_file:
+            print("Pas d'images")
+            return
+        else :
+            fin(latest_file)
+            self.InsideBut2.show()
+            self.InsideBut.setEnabled(False)
+
+
+
+    def disableBut(self):
+        if self.lang ==0:
+            self.popupLabel.setText("PATIENTEZ...")
+        elif self.lang ==1:
+            self.popupLabel.setText("WAIT...")
+        elif self.lang ==2:
+            self.popupLabel.setText("")
+        elif self.lang ==3:
+            self.popupLabel.setText("")
+        else :
+            self.popupLabel.setText("")
+        self.popupLabel.update
+        self.backBut2.setEnabled(False)
+        cv2.waitKey(125)
+        self.createGif()
+        self.popupLabel.setText("")
+        
+
+    def enableBut(self):
+        self.backBut2.setEnabled(True)
+        self.InsideBut.setEnabled(True)
+
+
+
+
+    def addtimer(self):
+        if self.qtimer.remainingTime() <= self.timer:
+            new_timer = 450000 #milliseconds
+            self.qtimer.setInterval(new_timer)
+            self.qtimer.start()
+   
+
     def mousePressEvent(self,event):
         if event == QtGui.QMouseEvent.MouseButtonPress:
             self.addtimer()
-            
-        else : 
+        else:
             self.addtimer()
-
-
-    #this method, binded to the backButton enables to go back to the previous window we were
-    def leavingWin(self):
-        self.reset_values()
-        self.close()
-
-    # this metohd increment the logic value , and will let us know when someone wants to take a picture
-    def takePicture(self):
-        if self.stoploop==0:
-            self.disableBut()
-        else : 
-            pass
-        self.logic+=1
-
-
-    #This method blocks the buttons action and is mainly used when a photo is taken, and helps preventing problems
-    def disableBut(self):
-        self.moreBut.setEnabled(False)
-        self.captureBut.setEnabled(False)
-        self.infoBut.setEnabled(False)
-        self.backbut.setEnabled(False)
-    #Once the buttons are disabled we need to active them back
-    def enableBut(self):
-        self.moreBut.setEnabled(True)
-        self.captureBut.setEnabled(True)
-        self.infoBut.setEnabled(True)
-        self.backbut.setEnabled(True)
-
-    #This method launch the camera with cv2
-    #while the camera is open we read and display the images
-    #When someone wants to take a photo a countdown is displayed, then at the end a photo is taken and displayed by calling the DisplayImg() method
-    #If faces are found we call the displayResults() method after clearing the label
-    #A Quick message to ask client to wait is also added
-    def launchCam(self,TIMER):
-        self.removeImg()
-        font = cv2.FONT_HERSHEY_SIMPLEX
-        self.reset_values()
-        self.stoploop=0
-        cam=cv2.VideoCapture(0) 
-        
-        while (cam.isOpened()  and self.stoploop==0) : 
-            ret, img = cam.read() 
-            if ret == True :
-                self.displayImage(img) 
-                cv2.waitKey()
-
-            if (self.logic==2): 
-                self.logic=1
-                prev = time.time() 
-  
-                while TIMER >= 0: # delaying the photo by TIMER seconds
-                    ret, img = cam.read()
-                    if TIMER== 0:
-                        pass
-                    else: 
-                        cv2.putText(img, str(TIMER),  
-                            (100, 125), font, 
-                            2, (105, 105, 105), 
-                            4, cv2.LINE_AA)
-                    self.displayImage(img)
-                    cv2.waitKey() 
-                    cur = time.time() 
-                    if cur-prev >= 1: 
-                        prev = cur 
-                        TIMER = TIMER-1
-                else : # while else is a loop in python!
-                    date=time.strftime("%Y-%m-%d-%H-%M %S")
-                    cv2.imwrite(resource_path('portrait\\im-'+date+'.jpg'),img)
-                    if self.language==0:
-                        self.waitingLabel2.setText("PATIENTEZ..")
-                    elif self.language==1:
-                        self.waitingLabel2.setText("WAIT..")
-                        pass
-                    elif self.language==2:
-                        pass
-                    elif self.language==3:
-                        pass
-                    else:
-                        pass
-                    
-                    self.waitingLabel2.update()
-                    cv2.waitKey(125) 
-                    self.imgLabel.clear()
-                    self.value+=1 # this value enables us to know whether or not someone took a picture
-                    
-                    break 
-
-                                           
-        cam.release() 
-        cv2.destroyAllWindows() 
-        self.imgLabel.clear()
-        if self.value != 0 : # to prevent problem, the method displayResults can be called only if someone took a picture before
-            
-            self.displayResults()
-            cv2.waitKey(1000) # then we display the results in the image Label
-            self.enableBut()
-            if self.facedetec==1:
-                self.waitingLabel2.setText("No faces found")
-                self.waitingLabel2.update()
-        else : 
-            pass
-        
-    #method that display an image in the imgLabel, we use  the opencv lib to get the camera stream, 
-    #however this lib returns BGR images so we read the image with the same pattern then swap to rbg
-    # and create a Pixmap and add it to the label
- 
-    def displayImage(self,img): 
-        qformat = QImage.Format_Indexed8 
-        if (len(img.shape)==3): 
-            if(img.shape[2])==4: 
-                qformat=QImage.Format_BGRA888 
-            else : 
-                qformat=QImage.Format_BGR888 
-            img = QImage(img,img.shape[1],img.shape[0],qformat) 
-            img.rgbSwapped() 
-            self.imgLabel.setPixmap(QPixmap.fromImage(img)) 
-            self.imgLabel.setAlignment(QtCore.Qt.AlignHCenter | QtCore.Qt.AlignVCenter) 
-
-
-    #This method will look for the last image taken
-    #Then call the prediction method that loads model and evalute images
     
-    #because the last picutre might not contain faces we use try catch, to get the Exception is no faces were found and update the face_detec variable
-    #If faces are found we finally display the resulting image is displayed and prediction pourcentage are also given.
-    def displayResults(self):
-        
-        path = os.path.join("portrait","*")
-        list_images = glob.glob(resource_path(path))
-        print(list_images)
-        latest_img = max(list_images,key=os.path.getctime) 
-        try :
-            age_deteced,gender_detected =prediction(latest_img)
-            age_deteced=[math.floor(k*100) for k in age_deteced]
-            for k in range(len(gender_detected)):
-                gen = gender_detected[k]
-                if gen< 0.5:
-                    gen = math.floor((1-gen)*100)
-                else :
-                    gen = math.floor(gen*100)
-                gender_detected[k]=gen
-            
-            img_dir = os.path.join('detection','images','detected','*')
-            list_of_files = glob.glob(resource_path(img_dir)) 
-            latest_file = max(list_of_files, key=os.path.getctime)
 
-            if latest_file.endswith(".png"):
-                img=cv2.imread(latest_file)
-                self.displayImage(img)
-            if self.language==0:
-
-                self.resultLabel.setText(f" L'IA prédit à {gender_detected} % de confiance votre genre \net à {age_deteced} % de confiance votre age ")
-
-            elif self.language==1:
-
-                self.resultLabel.setText(f" The IA predicts your gender with {gender_detected} % of confidence\nand your age with {age_deteced} % of confidence ")
-
-            elif self.language==2:
-
-                self.resultLabel.setText(f" The IA predicts your gender with {gender_detected} % of confidence\nand your age with {age_deteced} % of confidence ")
-
-            elif self.language==3:
-
-                self.resultLabel.setText(f" The IA predicts your gender with {gender_detected} % of confidence\nand your age with {age_deteced} % of confidence ")
-
-            else :
-
-                self.resultLabel.setText(f" The IA predicts your gender with {gender_detected} % of confidence\nand your age with {age_deteced} % of confidence ")
-            self.framekeep.show()
-        except Exception :
-            self.facedetec = 1
-            os.remove(latest_img)
-        
-
-    #This method is used to save images, after an image is taken we ask to the client if they accept the LSC to keep it
-    #We obviously don't want to save an image without faces
-    #we basically save the raw image, the result image and the aligned faces from the raw image
-    def saveImg(self):
-        tmp_path = os.path.join('detection','images','aligned','tmp','*.png')
-        list_tmp = glob.glob(resource_path(tmp_path))
-        print(list_tmp)
-        for file in list_tmp:
-            shutil.copy(file,resource_path(os.path.join('detection','images','aligned','saved','')))
-            
-        
-
-        if self.facedetec==0:    
-            portrait_path = os.path.join("portrait","*.jpg")
-            list_portrait = glob.glob(resource_path(portrait_path))
-            latest_portrait = max(list_portrait,key=os.path.getctime)
-            shutil.copy(latest_portrait,resource_path(os.path.join('portrait','saved','')))
-        else: 
-            pass
-        
-        detected_path = os.path.join('detection','images','detected','*.png')
-        list_detected=glob.glob(resource_path(detected_path))
-        latest_detected = max(list_detected,key=os.path.getctime)
-        shutil.copy(latest_detected,resource_path(os.path.join('detection','images','detected','saved','')))
-
-    #This method allow us to remove the last image taken automatically if the client doesn't activly save its image
-    def removeImg(self):
-        if self.facedetec==0:
-                
-            portrait_path = os.path.join("portrait","*.jpg")
-            list_portrait = glob.glob(resource_path(portrait_path))
-            print(list_portrait)
-            if not list_portrait:
-                pass   
-            else :
-                latest_portrait = max(list_portrait,key=os.path.getctime)
-                os.remove(latest_portrait)
-            
-            detected_path = os.path.join('detection','images','detected','*.png')
-            list_detected=glob.glob(resource_path(detected_path))
-            if not list_detected:
-                pass
-            else :
-                latest_detected = max(list_detected,key=os.path.getctime)
-                os.remove(latest_detected)
-
+    #This method speaks for itself, we just display the easy explanations
+    def displayEasy(self,lang):
+        self.labelimage.clear()
+        self.Insideframe.hide()
+        self.labelimage.setMovie(self.gif)
+        self.labelLogo.setPixmap(self.pixmap)
+        self.gif.start()
+        if lang ==0:
+            self.labeltext.setText(
+                "Qu-est ce que l'intelligence arificielle?\n \n"
+                "C'est une machine qui comme les humains, peut apprendre toute seule\n"
+                "En dessous c'est un exemple, la machine arrive à reconnaître des chats et des chiens\n"
+                "Chaque cercle représente un neurone, et ils sontt tous connectés entre eux, chaque ligne verticales de neurones sont appelées couches\n"
+                "Et toutes les couches forment un réseau de neurones\n"
+                "En donnant une image au reseau, les connections entre les neurones vont plus ou moins s'activer si l'image est un cat ou un chien\n"
+                "A la fin, il y a seulement 2 neurones, donc si l'un est plus activé que l'autre, la machine sait que l'image est un chat et inversement avec le chien\n \n"
+                "Le réseau que nous avons utilisé pour reconnaitre votre age et votre gender est un peu plus complexe\n"
+                "Le réseau en dessous :  \t\t\t\t  Notre réseau : \n"
+                "  Nombre de paramètres d'entrée : 3  \t\t\t  Nombre de paramètres d'entrée : 227*227*3 = 154 587 \n"
+                "  Nombre de paramètres modifiables : 3*4*2 = 24  \t\t  Nombre de paramètres modifiables : 23 792 713\n"
+                "  Nombre de couche intermédiaire : 1  \t\t\t  Nombre de couches intermédiaire : 174\n"
+                "  Nombre de paramètres de sortie : 2  \t\t\t  Nombre de paramètre de sortie : 11\n")
+            self.labelmore.setText("Si vous voulez en apprendre plus sur l'intelligence artificielle et le deep learning, allez sur la chaine youtube de 3Blue1Brown ! ")
+        elif lang==1 :
+            self.labeltext.setText(
+                "What does Aritifical Intelligence mean?\n \n" 
+                "It is a programm that, like humans,is able to learn simple things\n"
+                "Below, the AI is able to distinguish cats and dogs.\n \n"
+                "But How it works?\n \n"
+                "Each circle represents a neuron, as you can see they are all connected. Vertical lines of neurons are named layer.\n"
+                "The whole thing is called a  neural netwrok.\n"
+                "When you are giving an image to the network, the connections between neurons will be more or less activated, if it is a dog or a cat.\n"
+                "At end there are only 2 neurons, so if the first one is more activated than the second one, the network knows it's a cat and otherwise it's a dog \n \n"
+                "The network we used to detect your age and your gender is more complex... :\n"
+                "The network below :  \t\t\t\t  Our network :\n"
+                "Input parameters :  3  \t\t\t\t\t  Input parameters : 227*227*3 = 154 587\n"
+                "Parameters : 3*4*2 = 24  \t\t\t\t\t  Parameters : 23 792 713\n"
+                "number of hidden layer : 1 \t\t\t\t  Number of hidden layer : 174\n"
+                "Output parameters : 2  \t\t\t\t\t  Outputs parameters : 11\n")
+            self.labelmore.setText("If you want to learn more about artificial intelligence and deep learning  go to 3Blue1Brown youtube channel ! ")
+        elif lang ==2:
+            self.labeltext.setText("")
+            self.labelmore.setText("")
+        elif lang ==3:
+            self.labeltext.setText("")
+            self.labelmore.setText("")  
         else :
-            pass
+            self.labeltext.setText("")
+            self.labelmore.setText("")
 
-    def retranslateUi(self):
+    #This method speaks for itself, we just display the normal explanations
+    def displayNormal(self,lang):
+        self.Insideframe.hide()
+        self.labelimage.clear()
+        self.labelimage.setMovie(self.gif2)
+        self.labelLogo.setPixmap(self.pixmap)
+        self.gif2.start()
+        if lang ==0:
+            self.labeltext.setText(
+                "Qu'est ce l'intelligence artificielle et comment ça marche?\n \n"
+                "Enfaite ici pour être plus précis, c'est plûtot le deep learning qui nous intéresse\n"
+                "le Deep learning décrit des algoritmhes qui ont une structure se rapprochant du cerveau humain, un réseau de neurones\n"
+                "et tente de reporduire certaines de ces fonctions\n \n"
+                "Comment c'est possible?\n \n"
+                "Grâce à des enormes bases de données, les reseaux de neurones sont entrainés à reconnaitre des formes ou objets(par exemple)\n"
+                "L'entrainement du reseau est une des phases des plus importante, pendant celle-ci on va lui donner des images de ce qu'il doit reconnaitre\n"
+                "Et lui dire ce qu'il aurait dû obtenir. Avec ça il va pouvoir se corriger tout seul, et progressivement s'améliorer\n"
+                "Si on regarde l'exemple en-dessous, chaque pixel de l'image est une entrée."
+                "La première couche de neurones va généralement reconnaitre les formes caractéristiques simples: les countours.\n"
+                "Les couches suivantes vont de plus en plus reconnaitre des patterns complexes. La dernière couche à autant de neurones qu'il y a de classes(chat,chien)\n"
+                "Cette dernière couche represente alors les résultats du réseau \n \n"
+                "Comparons le resau que nous avons utilisé reconnaitre votre age et votre gender et le réseau en dessous!\n"
+                "Le réseau en dessous : \t\t\t\t\t  Notre réseau : \n"
+                "  Nombre de paramètres d'entrée : 20*20*3 = 1200 \t\t  Nombre de paramètres d'entrée : 227*227*3 = 154 587 \n"
+                "  Nombre de paramètres modifiables : 108 352 \t\t\t  Nombre de paramètres modifiables : 23 792 713\n" # 108 352 = 3x3x3*64 + 3*3*64*128+2*2*128*64+64*2 obtenu de façon un peu arbitraire
+                "  Nombre de couche intermédiaire : 3  \t\t\t\t  Nombre de couches intermédiaire : 174\n"
+                "  Nombre de paramètres de sortie : 2  \t\t\t\t  Nombre de paramètre de sortie : 11\n")
+            self.labelmore.setText("Si vous voulez en apprendre plus sur l'intelligence artificielle et le deep learning, allez sur la chaine youtube de 3Blue1Brown ! ")
+        elif lang==1 :
+            self.labeltext.setText(
+                "What does Articial Intelligence describe?\n \n"
+                "Well, the question should be what is Deep Learning?\n"
+                "It's a technique that construsts artificial neural networks and aim to mimic the structure and function of the human brain\n\n"
+                "How it works?\n"
+                "Thanks to massive amout of data, neural networks are trained to find and recognize patterns in order to make decisions\n"
+                "During the training, we help them to know if their predictions were correct or not.\n"
+                "Based on the results the neural network will increasingly become more accurate.\n \n"
+                "Let's look at the example below\n"
+                "The first layer will abstracts the pixels that are input data, and detect the edges of features in the image. The next one will detect something else and so on.\n"
+                "At the end, the last layer, named output layer will return a number of value generally equals to the number of different classes(dog,cat)\n"
+                "Representing the prediction of the neural network.\n\n"
+                "Let's compare this network with the one we used to detect your gender and your age :\n"
+                "The network below :  \t\t\t\t  Our network :\n"
+                "Input parameters :  20*20*3 = 1200  \t\t\t  Input parameters : 227*227*3 = 154 587\n"
+                "Parameters : 108 352  \t\t\t\t\t  Parameters : 23 792 713\n"
+                "number of hidden layer : 3  \t\t\t\t  Number of hidden layer : 174\n"
+                "Output parameters : 2  \t\t\t\t\t  Output parameters : 11\n")
+            self.labelmore.setText("If you want to learn more about artificial intellience and deep learning  go to 3Blue1Brown youtube channel ! ")
+        elif lang ==2:
+            self.labeltext.setText("")
+            self.labelmore.setText("")
+        elif lang ==3:
+            self.labeltext.setText("")
+            self.labelmore.setText("")
+        else :
+            self.labeltext.setText("")
+            self.labelmore.setText("")
+
+
+    #This method speaks for itself, we just display the advanced explanations
+    def displayAdvanced(self,lang):
+        self.Insideframe.hide()
+        self.labelimage.clear()
+        self.labelimage.setMovie(self.gif3)
+        self.gif3.start()
+        self.labelLogo.setPixmap(self.pixmap)
+        if lang ==0:
+            self.labeltext.setText(
+                "Qu'est ce l'intelligence artificielle et comment ça marche?\n \n"
+                "Le domaine de l'intelligence artificielle recouvre l'ensemble des programmes capablent d'effectuer des tâches qui normalement demandent une intelligence humaine\n"
+                "Le deep learning est une ramification du machine learning qui à pour but de résoudre des problèmes complexes avec ou sans données structurées\n"
+                "Les algorithmes de deep learning se composent généralement d'un modèle de réseau de neurones, modèle que l'on va entraîner et qui va s'améliorer pendant cette phase.\n"
+                "Comment ça marche?\n \n"
+                "Prenons l'exemple en-dessous, on souhaite reconnaitre des chiffres écrit à la main\n"
+                "L'image étant l'entrée, plus précisement les pixels de l'image. Donc en entrée nous avons la matrix de pixel."
+                "Chaque neurone de la première couche contient la valeur d'un pixel, et chaque neurone de cette couche connecté à tous les neurones de la couche suivantes,\n"
+                "ces connections ont toutes des valeurs associées, des poids.\n"
+                "Pour obtenir les valeurs des neurones des autres couches on appliques des functions d'activations qui dependent de la couche précédente et des poids.\n"
+                "En passant une image à travers le réseau on effectue un forward pass"
+                "On note que la dernière couche, doit contenir un nombre de neurones égal aux nombres de classes, ici il y a 10 classes.\n"
+                "Une fois le forward pass effectué on va regarder la dernière couche et la comparer à ce que le réseau aurait dû trouver (un 7 par exemple)\n"
+                "Si le réseau de neurones c'est plus ou moins trompés il va corriger légèrement tous les poids, c'est la backpropagation\n"
+                "L'enchainement forward pass backpropagation est répété un grand nombre de fois pour atteindre des résultats intéressant\n"
+                "Finalement, comme dans l'exemple, lorsque l'entrainement est terminée, chaque chiffre va plus ou moins activée certaines parties du réseau, et il sera capable de le reconnaitre\n")
+            self.labelmore.setText("Si vous voulez en apprendre plus sur l'intelligence artificielle et le deep learning, allez sur la chaine youtube de 3Blue1Brown ! ")
+        elif lang==1 :
+            self.labeltext.setText("What is deep learning?\n \n"
+                "The field of artificial intelligence is mainly when machines can perform tasks that typically require human intelligence.\n"
+                "Deep learning as a subset of machine learning focuses on solving complex problems even when using  diverse and unstructured data set\n"
+                "The deep learning algorithm would perform a task repeatedly, each time tweaking it a little to improve the outcome\n \n"
+                "How it works?\n \n"
+                "Let's take the example below, we want to recognize hand written numbers.\n" 
+                "The image is the input, more precisely, each pixel of the image. So we have a matrix containing the pixel values as input\n" 
+                "Then, all input neurons are connected to neurons in the second layers, these connections have weights.\n"
+                "The input neurons contains the value of each pixel. To get the value of the second layer, we apply an acitvation function to the inputs and weights and so on.\n"
+                "It is called the forward pass\n"
+                "As you can see, we are increasingly reducing the number of neurons, indeed, at the end of the network we want the exact number of classes it must recognize, there 10.\n"
+                "On this example, the training part is already finished, so the network is directly able to detect a 7.\n"
+                "Otherwise, the network would have compared the output layer and the true value then tweak all its weights to reduce the error between true and prediciton values\n"
+                "It's called the backpropagation\n"
+                "The training part will essentialy constist of repeating forward pass followed by backpropagtion for a large amount of images\n"
+                "Once the training part is done, each hand written numbers will trigger specific connections and neurons through the network, to finally predict the correct answer.\n")
+            self.labelmore.setText("If you want to learn more about artificial intellience and deep learning  go to 3Blue1Brown youtube channel ! ")
+
+        elif lang ==2:
+            self.labeltext.setText("")
+            self.labelmore.setText("")
+        elif lang ==3 :
+            self.labeltext.setText("")
+            self.labelmore.setText("")    
+        else :
+            self.labeltext.setText("")
+            self.labelmore.setText("")
+    #This method speaks for itself, we just display the expert explanations    
+    def displayExpert(self,lang):
+        self.Insideframe.show()
+        self.labelLogo.setPixmap(self.pixmap)
+        self.labelimage.clear()
+        if lang ==0:
+            self.labeltext.setText(
+                "Avant de commencer, prenez connaissance des explications du niveau avancé car nous nous reposerons dessus ici\n \n"
+                "En effet nous allons maintenant revenir à notre cas, la classification d'image et notamment suivant leur genre et leur age\n"
+                "La classification de visage étant beacoup plus complexe que celle de chiffres, le réseau de neurones doit contenir beacoup plus de paramètres pour être peformant.\n"
+                "Entrainer totalement tous ces paramètres demanderaient d'importantes ressources sans forcément de resultats..\n"
+                "Généralement, pour palier à ce problème on utilise le transfert learning (surtout lorsque l'objectif est la classification d'image!).\n \n"
+                "C'est quoi le transfer learning?\n \n"
+                "Pour faire simple c'est lorsqu'on reutilise un modèle déjà entrainée sur une importante base de données comme base pour notre propre modèle\n"
+                "Même si le réseau n'as pas été entrainé à reconnaitre ce qu'on désire classifier tout n'est pas à jeter! Un transfert de connaissance est possible!\n"
+                "En utilisant un modèle pré-entrainé comme base, lors de l'entrainement de notre modèle, celui-ci sera bien plus rapide et efficace à reconnaitre des patterns simple\n"
+                "Qu'il a déjà rencontré lors de son premier entrainement!\n"
+                "A cette base, on rajoute par-dessus des couches qui elles seront choisies specifiquement pour notre modèle (la taille de la dernière couche dépend du nombre de classes)\n \n"
+                "Maintenant que nous avons notre modèle, nous avons besoin d'image pour l'entrainer, beaucoup d'image, et des images différentes!\n"
+                "Une partie très importante du deep learning est le data processing, c'est à dire le pré-traitement des images.\n"
+                "C'est seulement si cette partie est bien réalisée que le réseau apprendra. Une fois cette partie terminée, on peut enfin lancer des entrainements.\n"
+                "Mais les premiers résultats ne sont généralement pas satisfaisant, une autre phase commence alors : le fine-tunning \n"
+                "Phase durant laquelle on va faire evoluer des paramètres du réseau. Finalement, suite à un certain nombre d'essais, on atteint enfin un modèle performant\n\n"
+                "En appuyant sur le bouton Creer,  vous verrez apparitre un gif contenant une feature map(=sortie) pour chaque couche des 141 premières couches du réseau\n"
+                "Les images sont de basses qualités car le réseau travaille avec des images de tailles fixes, ces sorties vous donnerons une idée de ce que reconnait le réseau\n"
+                "Quand le gif sera terminée un autre bouton apparaitra pour afficher le gif !\n"
+                )
+            self.labelmore.setText("Si vous voulez en apprendre plus sur l'intelligence artificielle et le deep learning, allez sur la chaine youtube de 3Blue1Brown ! ")
+            self.InsideBut.setText("Creer")
+            self.InsideBut2.setText("Afficher")
+            
+        elif lang ==1:
+            self.labeltext.setText(
+                "Before starting, you should take notice of the advanced explanation, we will based ourself on it\n \n"
+                "Indeed, we will now comeback to our case, the image classfication and more precisely the gender and age recognition\n"
+                "This classification is alot more resource demanding than the hand writting one we saw previously. We need more parameters to achieve descent result.\n"
+                "However, training all these parameters might request time and resource without guaranteed success. \n"
+                "Thus,  to overcome this issue we usually use transfer learning. \n \n"
+                "Whats tranfer learning? \n \n"
+                "Well it allows the improvement of learning in a new task through the transfer of knowledge from a related task that has already been learned. \n"
+                "To simplify it, some layers of the pre-trained model are already efficient for detecting simple patterns, so when training our model, we want to keep this knowledge.\n"
+                "Consequently we tend to use a pre-trained model as a core of our model, then we add on top of it, more or less layer depending on our classification job \n"
+                "Now that we have our model, we need images, a lot of images! \n "
+                "Therefore finding these images and processing them to be able to feed them to the model is a huge part of the process \n"
+                "Only when it's done, the training will be possible. Sadly first training sessions are usually not good. To improve our model we start fine tunning parameters that matters. \n"
+                "Finally after many attempts we might end up with an accurate model \n \n"
+                "Press the button that appeared, you will see a gif containing a feature map(=output) for each layer of the 100 firsts layers \n"
+                "Images are not in high quality because the network  reduces increasingly the size of inputs, however this will an idea of what the network recognize\n"
+                "When the gif will be finished a new bouton will appear, press it to see the result\n"
+            )
+            self.labelmore.setText("If you want to learn more about artificial intellience and deep learning  go to 3Blue1Brown youtube channel ! ")
+            self.InsideBut.setText("Create")
+            self.InsideBut2.setText("Display")
+        elif lang ==2:
+            self.labeltext.setText("")
+            self.labelmore.setText("")
+            self.InsideBut.setText("")
+            self.InsideBut2.setText("")
+        elif lang ==3:
+            self.labeltext.setText("")
+            self.labelmore.setText("")
+            self.InsideBut.setText("")
+            self.InsideBut2.setText("")
+        else :
+            self.labeltext.setText("")
+            self.labelmore.setText("")
+            self.InsideBut.setText("")
+            self.InsideBut2.setText("")
+
+
+    def retranslateUi(self, Window3):
         _translate = QtCore.QCoreApplication.translate
-        self.setWindowTitle(_translate("Window2", "MainWindow"))
-        
+        self.setWindowTitle(_translate("Window3", "MainWindow"))
 
-def resource_path(relative_path):
-    """ Get absolute path to resource, works for dev and for PyInstaller """
-    try:
-        # PyInstaller creates a temp folder and stores path in _MEIPASS
-        base_path = sys._MEIPASS
-    except Exception:
-        base_path = os.path.abspath(".")
 
-    return os.path.join(base_path, relative_path)
+
 
 
 if __name__ == "__main__":
     import sys
     app = QtWidgets.QApplication(sys.argv)
-    ui = Ui_Window2()
-    ui.setupUi(lang=1)
-    ui.showFullScreen()
-    #ui.show()
+    ui = Ui_Window3()
+    ui.setupUi(1)
+    ui.show()
     sys.exit(app.exec_())
